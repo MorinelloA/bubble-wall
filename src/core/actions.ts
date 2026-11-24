@@ -4,9 +4,11 @@
  * reload can never disagree about what a setting means.
  */
 import { COLOR_IDS, type ColorId, type RemoteKey } from "./palette";
+import { lookOf } from "./scenes";
 import {
   BRIGHTNESS_STEPS,
   BUBBLE_SPEED_STEPS,
+  defaultSettings,
   isFlashing,
   LIGHT_MODES,
   LIGHT_SPEED_STEPS,
@@ -16,7 +18,9 @@ import {
   type LayerMix,
   type LayerSetting,
   type Layout,
+  type DrawerSide,
   type LightMode,
+  type Look,
   type NoiseColor,
   type Settings,
 } from "./settings";
@@ -115,6 +119,48 @@ export const setMasterVolume =
   (volume: number): Change =>
   (s) =>
     patch(s, { masterVolume: clamp(volume, 0, 1) });
+
+/** Puts a whole look and sound on the wall: a favourite or a ready-made scene. */
+export const applyLook =
+  (look: Look): Change =>
+  (s) => ({ ...s, ...look, paused: false });
+
+/** Remembers the wall as it is now in a favourite slot. Not while the remote is locked. */
+export const saveFavourite =
+  (slot: number): Change =>
+  (s) =>
+    s.remoteLocked || slot < 0 || slot >= s.favourites.length
+      ? s
+      : {
+          ...s,
+          favourites: s.favourites.map((saved, index) => (index === slot ? lookOf(s) : saved)),
+        };
+
+/** Brings a favourite back. An empty slot changes nothing. */
+export const applyFavourite =
+  (slot: number): Change =>
+  (s) => {
+    const look = s.favourites.at(slot);
+    return look ? applyLook(look)(s) : s;
+  };
+
+/** The grown-up limit on volume, from 0 to 1. */
+export const setVolumeCap =
+  (volumeCap: number): Change =>
+  (s) =>
+    patch(s, { volumeCap: clamp(volumeCap, 0, 1) });
+
+export const toggleFlashStrobe: Change = (s) => patch(s, { allowFlashStrobe: !s.allowFlashStrobe });
+
+export const toggleRemoteLock: Change = (s) => patch(s, { remoteLocked: !s.remoteLocked });
+
+export const setDrawerSide =
+  (drawerSide: DrawerSide): Change =>
+  (s) =>
+    patch(s, { drawerSide });
+
+/** Back to how the app was when first opened. Favourites go too. */
+export const resetEverything: Change = () => defaultSettings();
 
 /** What pressing a key on the remote does: switch the power, or change a setting. */
 export type RemoteEffect =

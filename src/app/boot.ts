@@ -1,12 +1,20 @@
+import { resetEverything } from "../core/actions";
 import { createRng } from "../core/rng";
 import { createStore, type Store } from "../core/store";
 import { createAudioContext } from "./audio/context";
 import { createAudioEngine, type AudioEngine } from "./audio/engine";
 import { blockGestures } from "./platform/device";
 import { createProblemLog, watchForProblems, type ProblemLog } from "./platform/errors";
-import { createSafeStorage, loadSettings, persistSettings } from "./platform/storage";
+import {
+  createSafeStorage,
+  loadSettings,
+  persistSettings,
+  type SafeStorage,
+} from "./platform/storage";
 import { createPowerControl, type PowerControl } from "./power";
 import { createDrawer, type Drawer } from "./ui/drawer";
+import { createGrownups } from "./ui/grownups";
+import { createMorePanel, createTimerLine } from "./ui/more";
 import { createRemote } from "./ui/remote";
 import { createSoundHint, createSoundsPanel } from "./ui/sounds";
 import { showStart } from "./ui/start";
@@ -20,6 +28,37 @@ export interface App {
   readonly power: PowerControl;
   readonly drawer: Drawer;
   readonly audio: AudioEngine;
+}
+
+interface Saved {
+  readonly storage: SafeStorage;
+  readonly problems: ProblemLog;
+  readonly store: Store;
+}
+
+/** Opens storage, the problems log and the settings, and keeps the settings saved. */
+function openSaved(win: Window): Saved {
+  const doc = win.document;
+  // The storage and the log need each other: a storage failure is logged, and the
+  // log is kept in storage. The log is created second and reached through this box.
+  const late: { log?: ProblemLog } = {};
+  const storage = createSafeStorage(
+    () => win.localStorage,
+    (message) => late.log?.record(message),
+  );
+  const problems = createProblemLog(storage, () => Date.now());
+  late.log = problems;
+  watchForProblems(win, problems);
+
+  const store = createStore(loadSettings(storage));
+  const persistence = persistSettings(store, storage);
+  doc.addEventListener("visibilitychange", () => {
+    if (doc.visibilityState === "hidden") persistence.flush();
+  });
+  win.addEventListener("pagehide", () => {
+    persistence.flush();
+  });
+  return { storage, problems, store };
 }
 
 interface AudioNeeds {
@@ -56,26 +95,7 @@ export function boot(win: Window, seed: number): App {
   const root = doc.getElementById("app");
   if (!root) throw new Error("Bubble Wall needs an element with id 'app'.");
 
-  // The storage and the log need each other: a storage failure is logged, and the
-  // log is kept in storage. The log is created second and reached through this box.
-  const late: { log?: ProblemLog } = {};
-  const storage = createSafeStorage(
-    () => win.localStorage,
-    (message) => late.log?.record(message),
-  );
-  const problems = createProblemLog(storage, () => Date.now());
-  late.log = problems;
-  watchForProblems(win, problems);
-
-  const store = createStore(loadSettings(storage));
-  const persistence = persistSettings(store, storage);
-  doc.addEventListener("visibilitychange", () => {
-    if (doc.visibilityState === "hidden") persistence.flush();
-  });
-  win.addEventListener("pagehide", () => {
-    persistence.flush();
-  });
-
+  const { storage, problems, store } = openSaved(win);
   const onProblem = (message: string): void => {
     problems.record(message);
   };
@@ -100,9 +120,21 @@ export function boot(win: Window, seed: number): App {
       { id: "remote", label: "Remote", icon: "remote", content: createRemote(doc, store, power) },
       { id: "sounds", label: "Sounds", icon: "sound", content: createSoundsPanel(doc, store) },
       { id: "wall", label: "Wall", icon: "wall", content: createWallPanel(doc, store) },
+      { id: "more", label: "More", icon: "more", content: createMorePanel(win, store, power) },
     ],
   });
-  root.append(createSoundHint(doc, audio));
+  root.append(createTimerLine(win, power), createSoundHint(doc, audio));
+  createGrownups({
+    win,
+    root,
+    store,
+    problems,
+    onReset: () => {
+      store.update(resetEverything);
+      storage.clearOwn();
+      problems.clear();
+    },
+  });
   showStart(win, root, () => {
     power.on();
     audio.touch();

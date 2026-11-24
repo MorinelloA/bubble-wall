@@ -52,6 +52,56 @@ export function button(doc: Document, spec: ButtonSpec): HTMLButtonElement {
   return element;
 }
 
+export interface HoldSpec {
+  /** How long it must be held, in milliseconds. */
+  readonly ms: number;
+  readonly win: Pick<Window, "setTimeout" | "clearTimeout">;
+  readonly onHeld: () => void;
+}
+
+/**
+ * Calls `onHeld` once the element has been pressed and held, by finger or by key.
+ * Letting go early cancels. The click that ends a completed hold is swallowed, so
+ * holding never also counts as a tap.
+ */
+export function onHold(element: HTMLElement, spec: HoldSpec): void {
+  let timer: number | undefined;
+  let completed = false;
+  const cancel = (): void => {
+    spec.win.clearTimeout(timer);
+    timer = undefined;
+    element.classList.remove("is-holding");
+  };
+  const begin = (): void => {
+    if (timer !== undefined) return;
+    completed = false;
+    element.style.setProperty("--hold", `${String(spec.ms)}ms`);
+    element.classList.add("is-holding");
+    timer = spec.win.setTimeout(() => {
+      cancel();
+      completed = true;
+      spec.onHeld();
+    }, spec.ms);
+  };
+  element.addEventListener("pointerdown", begin);
+  element.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") begin();
+  });
+  for (const type of ["pointerup", "pointerleave", "pointercancel", "keyup", "blur"]) {
+    element.addEventListener(type, cancel);
+  }
+  element.addEventListener(
+    "click",
+    (event) => {
+      if (!completed) return;
+      completed = false;
+      event.stopImmediatePropagation();
+      event.preventDefault();
+    },
+    { capture: true },
+  );
+}
+
 /** Marks a button as the one in effect: a ring for the eye, a state for screen readers. */
 export function setPressed(element: HTMLElement, pressed: boolean): void {
   element.setAttribute("aria-pressed", String(pressed));

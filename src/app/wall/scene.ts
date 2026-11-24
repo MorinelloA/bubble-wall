@@ -86,7 +86,7 @@ export function createScene(deps: SceneDeps): Scene {
         dt: seconds,
         tubes,
         // Switching off stops the pump at once, so the tubes empty as the light fades.
-        pumpOn: settings.bubblesOn && power.isOn(),
+        pumpOn: settings.bubblesOn && power.isPumping(),
         speed: settings.bubbleSpeed,
         limit,
         forces: touchForces(touch, settings.feel),

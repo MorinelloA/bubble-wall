@@ -70,7 +70,7 @@ describe("boot", () => {
     const app = boot(window, 3);
     app.drawer.open();
     const tabs = [...root.querySelectorAll('[role="tab"]')].map((tab) => tab.textContent);
-    expect(tabs).toEqual(["Remote", "Sounds", "Wall"]);
+    expect(tabs).toEqual(["Remote", "Sounds", "Wall", "More"]);
     expect(root.querySelectorAll(".remote button")).toHaveLength(24);
   });
 
@@ -96,6 +96,28 @@ describe("boot", () => {
     document.dispatchEvent(new Event("visibilitychange"));
     expect(hidden).toHaveBeenCalledTimes(1);
     expect(visible).toHaveBeenCalledTimes(1);
+  });
+
+  it("reset puts settings back and forgets only what this app saved", () => {
+    localStorage.setItem("marblerun:progress", "level 7");
+    const root = addRoot();
+    const app = boot(window, 3);
+    app.store.update((s) => ({ ...s, colorId: "pink", volumeCap: 0.1 }));
+    window.dispatchEvent(new ErrorEvent("error", { message: "boom" }));
+
+    const lock = root.querySelector<HTMLButtonElement>("button.grownup-lock");
+    lock?.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true }));
+    vi.advanceTimersByTime(3000);
+    const reset = [...root.querySelectorAll("dialog button")].find(
+      (candidate) => candidate.textContent === "Reset everything",
+    ) as HTMLButtonElement | undefined;
+    reset?.click();
+    reset?.click();
+
+    expect(app.store.get().colorId).toBe("sky-blue");
+    expect(app.store.get().volumeCap).toBeCloseTo(0.8);
+    expect(app.problems.list()).toEqual([]);
+    expect(localStorage.getItem("marblerun:progress")).toBe("level 7");
   });
 
   it("starts from main.ts", async () => {
