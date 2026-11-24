@@ -22,6 +22,19 @@ export interface Bubble {
   /** Extra velocity from being pushed, which dies away. */
   vx: number;
   vy: number;
+  /** Held under a finger and growing: it does not rise until it is let go. */
+  held: boolean;
+}
+
+/** A finger in the water: bubbles within its reach are swirled round it and nudged away. */
+export interface Force {
+  readonly x: number;
+  readonly y: number;
+  readonly radius: number;
+  /** Speed round the finger, in wall heights per second at its centre. */
+  readonly swirl: number;
+  /** Speed away from the finger. */
+  readonly push: number;
 }
 
 export interface BubbleField {
@@ -39,10 +52,11 @@ export interface StepInput {
   readonly speed: number;
   /** The most bubbles allowed at once. Lowered when the device is struggling. */
   readonly limit: number;
+  readonly forces: readonly Force[];
   readonly rng: Rng;
 }
 
-const MIN_RADIUS = 0.006;
+export const MIN_RADIUS = 0.006;
 const MAX_RADIUS = 0.026;
 /** Rise speed in wall heights per second, slowest and fastest. */
 const SLOWEST_RISE = 0.09;
@@ -53,6 +67,10 @@ const WOBBLE_SPEED = 0.035;
 /** Share of pushed velocity left after one second. */
 const DRAG = 0.05;
 const BOUNCE = 0.3;
+/** Closer than this to a finger counts as this far, so the push never becomes huge. */
+const CLOSEST = 0.01;
+/** A bubble this big or bigger can be popped. */
+export const BIG_RADIUS = 0.035;
 
 function blankBubble(): Bubble {
   return {
@@ -66,6 +84,7 @@ function blankBubble(): Bubble {
     wobbleRate: 1,
     vx: 0,
     vy: 0,
+    held: false,
   };
 }
 
@@ -97,6 +116,21 @@ function launch(bubble: Bubble, tubeIndex: number, tube: Tube, rng: Rng): void {
   bubble.wobbleRate = rng.range(1.5, 4);
   bubble.vx = 0;
   bubble.vy = 0;
+  bubble.held = false;
+}
+
+/** Adds each finger's swirl and push to a bubble's velocity. */
+function stir(bubble: Bubble, forces: readonly Force[], dt: number): void {
+  for (const force of forces) {
+    const dx = bubble.x - force.x;
+    const dy = bubble.y - force.y;
+    const distance = Math.hypot(dx, dy);
+    if (distance >= force.radius) continue;
+    const falloff = Math.pow(1 - distance / force.radius, 2);
+    const unit = 1 / Math.max(distance, CLOSEST);
+    bubble.vx += (-dy * force.swirl + dx * force.push) * unit * falloff * dt;
+    bubble.vy += (dx * force.swirl + dy * force.push) * unit * falloff * dt;
+  }
 }
 
 function spawn(field: BubbleField, input: StepInput): void {
@@ -117,6 +151,8 @@ function spawn(field: BubbleField, input: StepInput): void {
 
 function move(bubble: Bubble, tube: Tube, input: StepInput): void {
   const { dt } = input;
+  if (bubble.held) return;
+  stir(bubble, input.forces, dt);
   bubble.phase += bubble.wobbleRate * dt;
   bubble.x += (Math.sin(bubble.phase) * WOBBLE_SPEED + bubble.vx) * dt;
   bubble.y += (bubble.vy - riseSpeed(input.speed) * bubble.lift) * dt;
@@ -158,4 +194,74 @@ export function refitField(field: BubbleField, tubes: readonly Tube[]): void {
       bubble.radius = Math.min(bubble.radius, (tube.x1 - tube.x0) / 2);
     }
   }
+}
+
+/** The free bubble to use next, or nothing when the pool is all in use. */
+function claim(field: BubbleField): Bubble | undefined {
+  return field.pool.find((bubble) => !bubble.active);
+}
+
+/**
+ * A puff of small bubbles at a point, flying apart. They come from the same pool as
+ * every other bubble, so bursts can never pile up. Returns how many were made.
+ */
+export function burst(
+  field: BubbleField,
+  tubes: readonly Tube[],
+  at: { readonly x: number; readonly y: number },
+  count: number,
+  rng: Rng,
+): number {
+  const index = tubeAt(tubes, at.x);
+  const tube = tubes.at(index);
+  if (index < 0 || !tube) return 0;
+  let made = 0;
+  for (; made < count; made += 1) {
+    const bubble = claim(field);
+    if (!bubble) break;
+    launch(bubble, index, tube, rng);
+    bubble.radius = Math.min(bubble.radius, MIN_RADIUS * 2.2);
+    const angle = rng.range(0, Math.PI * 2);
+    const speed = rng.range(0.05, 0.3);
+    bubble.x = clamp(
+      at.x,
+      tube.x0 + bubble.radius,
+      Math.max(tube.x0 + bubble.radius, tube.x1 - bubble.radius),
+    );
+    bubble.y = at.y;
+    bubble.vx = Math.cos(angle) * speed;
+    bubble.vy = Math.sin(angle) * speed;
+  }
+  return made;
+}
+
+/** Starts a bubble under a finger, to be grown. Nothing when the finger is on the frame. */
+export function holdBubble(
+  field: BubbleField,
+  tubes: readonly Tube[],
+  at: { readonly x: number; readonly y: number },
+  rng: Rng,
+): Bubble | null {
+  const index = tubeAt(tubes, at.x);
+  const tube = tubes.at(index);
+  const bubble = claim(field);
+  if (index < 0 || !tube || !bubble) return null;
+  launch(bubble, index, tube, rng);
+  bubble.held = true;
+  bubble.radius = MAX_RADIUS;
+  bubble.lift = 1.1;
+  bubble.x = at.x;
+  bubble.y = at.y;
+  return bubble;
+}
+
+/** The big, free bubble under a point, if there is one. */
+export function bigBubbleAt(field: BubbleField, x: number, y: number): Bubble | undefined {
+  return field.pool.find(
+    (bubble) =>
+      bubble.active &&
+      !bubble.held &&
+      bubble.radius >= BIG_RADIUS &&
+      Math.hypot(bubble.x - x, bubble.y - y) <= bubble.radius,
+  );
 }

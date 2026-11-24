@@ -152,11 +152,15 @@
   box-shadow: inset 0 0 0 2px rgb(191 233 255 / 0.6);
 }
 
+/* Centred when there is room, and scrollable from the top when there is not. */
 .drawer-panel {
-  flex: 1;
+  flex: 1 0 auto;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+}
+
+.drawer-panel > * {
+  margin-block: auto;
 }
 
 /* Blocks inside a panel. */

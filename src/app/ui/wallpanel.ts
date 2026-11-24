@@ -2,14 +2,18 @@
 import {
   changeBubbleSpeed,
   changeLightSpeed,
+  setFeel,
+  setFloaters,
   setLayout,
   setMode,
   toggleBubbles,
   togglePause,
+  toggleTouchSounds,
 } from "../../core/actions";
 import {
   BUBBLE_SPEED_STEPS,
   LIGHT_SPEED_STEPS,
+  type FloaterKind,
   type Layout,
   type Settings,
 } from "../../core/settings";
@@ -27,6 +31,13 @@ const LAYOUT_CHOICES: readonly (readonly [Layout, string, IconName])[] = [
   ["tubes6", "Six tubes", "tubes6"],
   ["tubes3", "Three tubes", "tubes3"],
   ["open", "One big tank", "open"],
+];
+
+const FLOATER_CHOICES: readonly (readonly [FloaterKind, string, IconName])[] = [
+  ["none", "No floaters", "none"],
+  ["fish", "Fish", "fish"],
+  ["balls", "Balls", "ball"],
+  ["stars", "Stars", "more"],
 ];
 
 /** A tile that applies one change and lights up while `isOn` holds. */
@@ -127,18 +138,64 @@ function layoutControls(doc: Document, store: Store): Part {
       isOn: (settings) => settings.layout === layout,
     }),
   );
-  const choices = el(doc, "div", "tiles");
-  choices.append(...tiles.map((part) => part.element));
+  return tileRow(doc, "Wall", tiles);
+}
+
+/** A titled row of tiles. */
+function tileRow(doc: Document, title: string, tiles: readonly Part[], className = "tiles"): Part {
+  const row = el(doc, "div", className);
+  row.append(...tiles.map((part) => part.element));
   return {
-    element: section(doc, "Wall", choices),
+    element: section(doc, title, row),
     refresh: (settings) => {
       for (const part of tiles) part.refresh(settings);
     },
   };
 }
 
+function touchControls(doc: Document, store: Store): Part {
+  return tileRow(doc, "Touch", [
+    tile(doc, store, {
+      label: "Calm",
+      icon: "breathe",
+      change: setFeel("calm"),
+      isOn: (settings) => settings.feel === "calm",
+    }),
+    tile(doc, store, {
+      label: "Play",
+      icon: "burst",
+      change: setFeel("play"),
+      isOn: (settings) => settings.feel === "play",
+    }),
+    tile(doc, store, {
+      label: "Touch sounds",
+      icon: "sound",
+      change: toggleTouchSounds,
+      isOn: (settings) => settings.touchSounds,
+    }),
+  ]);
+}
+
+function floaterControls(doc: Document, store: Store): Part {
+  const tiles = FLOATER_CHOICES.map(([kind, label, iconName]) =>
+    tile(doc, store, {
+      label,
+      icon: iconName,
+      change: setFloaters(kind),
+      isOn: (settings) => settings.floaters === kind,
+    }),
+  );
+  return tileRow(doc, "Floaters", tiles, "tiles four");
+}
+
 export function createWallPanel(doc: Document, store: Store): HTMLElement {
-  const parts = [bubbleControls(doc, store), lightControls(doc, store), layoutControls(doc, store)];
+  const parts = [
+    touchControls(doc, store),
+    bubbleControls(doc, store),
+    lightControls(doc, store),
+    layoutControls(doc, store),
+    floaterControls(doc, store),
+  ];
   const element = el(doc, "div", "wall-panel");
   element.append(...parts.map((part) => part.element));
   const refresh = (): void => {

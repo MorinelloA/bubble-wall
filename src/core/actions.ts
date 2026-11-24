@@ -10,6 +10,8 @@ import {
   isFlashing,
   LIGHT_MODES,
   LIGHT_SPEED_STEPS,
+  type Feel,
+  type FloaterKind,
   type LayerId,
   type LayerMix,
   type LayerSetting,
@@ -78,6 +80,19 @@ export const setLayout =
   (layout: Layout): Change =>
   (s) =>
     patch(s, { layout });
+
+/** Calm: touch only swirls and glows. Play: touch also bursts, bloops and pops. */
+export const setFeel =
+  (feel: Feel): Change =>
+  (s) =>
+    patch(s, { feel });
+
+export const setFloaters =
+  (floaters: FloaterKind): Change =>
+  (s) =>
+    patch(s, { floaters });
+
+export const toggleTouchSounds: Change = (s) => patch(s, { touchSounds: !s.touchSounds });
 
 /** Switches one sound layer on or off. */
 export const toggleLayer =

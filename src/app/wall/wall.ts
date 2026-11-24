@@ -1,17 +1,10 @@
 /**
- * The running wall: owns the canvas, keeps time, steps the simulation and draws.
+ * The running wall: owns the canvas, keeps time, and draws the scene each frame.
  * The browser pieces it needs (frames, the clock, the screen) are handed in.
  */
-import { createField, refitField, stepField } from "../../core/bubbles";
-import { hexToRgb } from "../../core/color";
-import { tubesFor, type Tube } from "../../core/layout";
-import { tubeLights } from "../../core/lights";
-import { colorHex } from "../../core/palette";
-import { initialQuality, MAX_BUBBLES, nextQuality } from "../../core/quality";
-import type { Rng } from "../../core/rng";
-import type { Store } from "../../core/store";
-import type { PowerControl } from "../power";
+import { initialQuality, nextQuality } from "../../core/quality";
 import { drawWall, type Size } from "./renderer";
+import { createScene, type SceneDeps } from "./scene";
 import type { Pen } from "./sprites";
 
 /** The longest step the simulation will take, so a stall does not fling bubbles. */
@@ -20,13 +13,10 @@ const MAX_PIXEL_RATIO = 2;
 /** A broken frame is logged, but not sixty times a second. */
 const PROBLEM_GAP_MS = 5000;
 
-export interface WallDeps {
+export interface WallDeps extends SceneDeps {
   readonly canvas: HTMLCanvasElement;
   readonly pen: Pen;
   readonly sprite: CanvasImageSource;
-  readonly store: Store;
-  readonly power: PowerControl;
-  readonly rng: Rng;
   /** Milliseconds, from a clock that only goes forward. */
   now(): number;
   requestFrame(callback: () => void): number;
@@ -43,12 +33,10 @@ export interface Wall {
 }
 
 export function createWall(deps: WallDeps): Wall {
-  const { canvas, pen, store, power } = deps;
-  const field = createField(MAX_BUBBLES);
+  const { canvas, pen } = deps;
+  const scene = createScene(deps);
   let size: Size = { width: 1, height: 1 };
-  let tubes: Tube[] = [];
   let quality = initialQuality();
-  let lightTime = 0;
   let last = 0;
   let handle: number | undefined;
   let lastProblemAt = Number.NEGATIVE_INFINITY;
@@ -61,32 +49,7 @@ export function createWall(deps: WallDeps): Wall {
     };
     canvas.width = size.width;
     canvas.height = size.height;
-    tubes = tubesFor(store.get().layout, size.width / size.height);
-    refitField(field, tubes);
-  };
-
-  const frame = (seconds: number): void => {
-    const settings = store.get();
-    power.tick();
-    if (!settings.paused) lightTime += seconds;
-    stepField(field, {
-      dt: seconds,
-      tubes,
-      // Switching off stops the pump at once, so the tubes empty as the light fades.
-      pumpOn: settings.bubblesOn && power.isOn(),
-      speed: settings.bubbleSpeed,
-      limit: quality.limit,
-      rng: deps.rng,
-    });
-    const lights = tubeLights({
-      mode: settings.mode,
-      color: hexToRgb(colorHex(settings.colorId)),
-      speed: settings.lightSpeed,
-      brightness: settings.brightness,
-      time: lightTime,
-      tubes: tubes.length,
-    });
-    drawWall(pen, size, { tubes, lights, field, level: power.level() }, deps.sprite);
+    scene.layout(size.width / size.height);
   };
 
   const tick = (): void => {
@@ -96,7 +59,8 @@ export function createWall(deps: WallDeps): Wall {
     last = now;
     quality = nextQuality(quality, elapsedMs);
     try {
-      frame(Math.min(MAX_STEP_SECONDS, Math.max(0, elapsedMs / 1000)));
+      const seconds = Math.min(MAX_STEP_SECONDS, Math.max(0, elapsedMs / 1000));
+      drawWall(pen, size, scene.step(seconds, now, quality.limit), deps.sprite);
     } catch (error) {
       if (now - lastProblemAt >= PROBLEM_GAP_MS) {
         lastProblemAt = now;
@@ -104,10 +68,6 @@ export function createWall(deps: WallDeps): Wall {
       }
     }
   };
-
-  store.subscribe((next, previous) => {
-    if (next.layout !== previous.layout) fit();
-  });
 
   return {
     start() {

@@ -4,7 +4,11 @@
  */
 import type { BubbleField } from "../../core/bubbles";
 import { scaleRgb, toCss, type Rgb } from "../../core/color";
+import type { FloaterSet } from "../../core/floaters";
 import type { Tube } from "../../core/layout";
+import type { FloaterKind } from "../../core/settings";
+import type { Glow } from "../../core/touchForces";
+import { drawFloaters } from "./floaterArt";
 import type { Pen } from "./sprites";
 
 export interface Frame {
@@ -12,6 +16,10 @@ export interface Frame {
   /** One colour per tube, brightness already applied. */
   readonly lights: readonly Rgb[];
   readonly field: BubbleField;
+  readonly floaters: FloaterSet;
+  readonly floaterKind: FloaterKind;
+  /** Extra light where the wall is being touched. */
+  readonly glows: readonly Glow[];
   /** 0 when the wall is off, 1 when fully on. */
   readonly level: number;
 }
@@ -73,6 +81,22 @@ function drawBubbles(pen: Pen, frame: Frame, size: Size, sprite: CanvasImageSour
   pen.globalCompositeOperation = "source-over";
 }
 
+/** Light blooming under each finger and rippling away from where it touched. */
+function drawGlows(pen: Pen, frame: Frame, size: Size): void {
+  pen.globalCompositeOperation = "lighter";
+  for (const glow of frame.glows) {
+    const x = glow.x * size.height;
+    const y = glow.y * size.height;
+    const radius = glow.radius * size.height;
+    const light = pen.createRadialGradient(x, y, 0, x, y, radius);
+    light.addColorStop(0, `rgb(255 255 255 / ${String(glow.strength * frame.level)})`);
+    light.addColorStop(1, "rgb(255 255 255 / 0)");
+    pen.fillStyle = light;
+    pen.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+  }
+  pen.globalCompositeOperation = "source-over";
+}
+
 /** Draws the whole wall. `sprite` is the bubble picture from sprites.ts. */
 export function drawWall(pen: Pen, size: Size, frame: Frame, sprite: CanvasImageSource): void {
   pen.globalAlpha = 1;
@@ -84,5 +108,8 @@ export function drawWall(pen: Pen, size: Size, frame: Frame, sprite: CanvasImage
     const light = scaleRgb(frame.lights.at(index) ?? DARK, frame.level);
     drawTube(pen, tube, light, size);
   }
-  if (frame.level > 0) drawBubbles(pen, frame, size, sprite);
+  if (frame.level <= 0) return;
+  drawGlows(pen, frame, size);
+  drawFloaters(pen, frame.floaters, frame.floaterKind, size.height, frame.level);
+  drawBubbles(pen, frame, size, sprite);
 }

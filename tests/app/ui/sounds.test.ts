@@ -140,6 +140,7 @@ describe("the sound hint", () => {
       touch: vi.fn(),
       hidden: vi.fn(),
       visible: vi.fn(),
+      play: vi.fn(),
       phase: () => phase,
       subscribe: (listener) => {
         listeners.push(listener);

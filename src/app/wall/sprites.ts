@@ -25,6 +25,7 @@ export type Pen = Pick<
   | "restore"
   | "translate"
   | "rotate"
+  | "scale"
   | "moveTo"
   | "lineTo"
   | "closePath"

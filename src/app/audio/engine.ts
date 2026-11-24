@@ -15,6 +15,7 @@ import { layerGains, masterGain } from "../../core/mix";
 import type { Rng } from "../../core/rng";
 import { LAYER_IDS, type LayerId, type Settings } from "../../core/settings";
 import type { Store } from "../../core/store";
+import type { TouchSound } from "../../core/touchForces";
 import { createEmitter } from "../../core/util";
 import type { PowerControl } from "../power";
 import { createSoundKit, type SoundKit, type Timers } from "./kit";
@@ -43,6 +44,8 @@ export interface AudioEngine {
   readonly hidden: () => void;
   readonly visible: () => void;
   readonly phase: () => AudioPhase;
+  /** Plays the sound of a touch, when sound is running and touch sounds are on. */
+  readonly play: (sound: TouchSound) => void;
   /** Hears every change of phase. */
   readonly subscribe: (listener: (phase: AudioPhase) => void) => () => void;
 }
@@ -117,12 +120,60 @@ function setMasterLevel(graph: Graph, level: number): void {
   rampTo(graph.master.gain, level, graph.ctx.currentTime, 0.2);
 }
 
+/** The sound of one touch, straight into the mix. */
+function playTouch(graph: Graph, sound: TouchSound): void {
+  const { kit, master, ctx } = graph;
+  const at = ctx.currentTime;
+  const shot = { at, pan: sound.pan, to: master };
+  const pick = (pitch: number): AudioBuffer | undefined =>
+    kit.bloops.at(Math.round(pitch * (kit.bloops.length - 1)));
+  if (sound.kind === "plip") {
+    // Calm: one low, quiet drop.
+    const buffer = pick(0);
+    if (buffer) kit.playOnce({ ...shot, buffer, rate: 0.6 + sound.pitch * 0.3, gain: 0.09 });
+    return;
+  }
+  const buffer = pick(sound.pitch);
+  if (buffer) kit.playOnce({ ...shot, buffer, rate: 1, gain: 0.3 });
+  if (sound.kind === "pop") kit.playOnce({ ...shot, buffer: kit.drop, rate: 0.5, gain: 0.5 });
+}
+
 function closeGraph(graph: Graph, timers: Timers): void {
   for (const channel of graph.channels.values()) {
     timers.clearTimeout(channel.stopTimer);
     channel.layer?.stop();
   }
   graph.ctx.close().catch(() => undefined);
+}
+
+interface Mixer {
+  /** Brings layers and level into line with the settings. */
+  readonly sync: () => void;
+  readonly play: (sound: TouchSound) => void;
+}
+
+/** Keeps whichever graph is current in step with the settings and the power level. */
+function createMixer(deps: AudioDeps, current: () => Graph | null): Mixer {
+  const { store, timers } = deps;
+  const setLevel = (): void => {
+    const graph = current();
+    if (graph) setMasterLevel(graph, masterGain(store.get(), deps.power.level()));
+  };
+  const sync = (): void => {
+    const graph = current();
+    if (graph) syncLayers(graph, store.get(), timers);
+    setLevel();
+  };
+  store.subscribe(sync);
+  // Sound and light go down together: the level is checked ten times a second.
+  timers.setInterval(setLevel, LEVEL_MS);
+  return {
+    sync,
+    play: (sound) => {
+      const graph = current();
+      if (graph && store.get().touchSounds) playTouch(graph, sound);
+    },
+  };
 }
 
 /** Asks a context to resume and reports back: with nothing when it did, with the error when not. */
@@ -138,20 +189,13 @@ function whenResumed(ctx: AudioContext, done: (error?: unknown) => void): void {
 }
 
 export function createAudioEngine(deps: AudioDeps): AudioEngine {
-  const { store, timers } = deps;
+  const { timers } = deps;
   const phases = createEmitter<AudioPhase>();
   let phase: AudioPhase = "none";
   let graph: Graph | null = null;
   let resumeTimer: number | undefined;
 
-  /** The overall level follows the volume and the power fade. */
-  const setLevel = (): void => {
-    if (graph) setMasterLevel(graph, masterGain(store.get(), deps.power.level()));
-  };
-  const sync = (): void => {
-    if (graph) syncLayers(graph, store.get(), timers);
-    setLevel();
-  };
+  const mixer = createMixer(deps, () => graph);
   const discard = (): void => {
     timers.clearTimeout(resumeTimer);
     if (graph) closeGraph(graph, timers);
@@ -197,7 +241,7 @@ export function createAudioEngine(deps: AudioDeps): AudioEngine {
     if (changed) {
       if (phase === "running") {
         timers.clearTimeout(resumeTimer);
-        sync();
+        mixer.sync();
       }
       phases.emit(phase);
     }
@@ -205,10 +249,6 @@ export function createAudioEngine(deps: AudioDeps): AudioEngine {
     // listeners hear the next phase before this one.
     commands.get(step.command)?.();
   }
-
-  store.subscribe(sync);
-  // Sound and light go down together: the level is checked ten times a second.
-  timers.setInterval(setLevel, LEVEL_MS);
 
   const on = (event: AudioEvent) => (): void => {
     dispatch(event);
@@ -222,6 +262,9 @@ export function createAudioEngine(deps: AudioDeps): AudioEngine {
     },
     visible: on("visible"),
     phase: () => phase,
+    play: (sound) => {
+      if (phase === "running") mixer.play(sound);
+    },
     subscribe: phases.subscribe,
   };
 }

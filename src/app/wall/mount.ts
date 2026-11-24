@@ -1,7 +1,9 @@
 /** Puts the wall on the page and keeps it running while the app is visible. */
 import type { Rng } from "../../core/rng";
 import type { Store } from "../../core/store";
+import type { TouchSound } from "../../core/touchForces";
 import type { PowerControl } from "../power";
+import { watchPointers } from "./pointer";
 import { drawBubbleSprite, SPRITE_SIZE } from "./sprites";
 import { createWall, type Wall } from "./wall";
 
@@ -11,6 +13,7 @@ export interface WallHost {
   readonly store: Store;
   readonly power: PowerControl;
   readonly rng: Rng;
+  readonly onTouchSound: (sound: TouchSound) => void;
   readonly onProblem: (message: string) => void;
 }
 
@@ -44,6 +47,8 @@ export function mountWall(host: WallHost): Wall | null {
     store: host.store,
     power: host.power,
     rng: host.rng,
+    pointers: watchPointers(canvas),
+    onTouchSound: host.onTouchSound,
     now: () => win.performance.now(),
     requestFrame: (callback) => win.requestAnimationFrame(callback),
     cancelFrame: (handle) => {

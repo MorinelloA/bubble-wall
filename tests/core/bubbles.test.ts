@@ -20,6 +20,7 @@ const input = (over: Partial<StepInput> = {}): StepInput => ({
   pumpOn: true,
   speed: 3,
   limit: 320,
+  forces: [],
   rng: createRng(11),
   ...over,
 });

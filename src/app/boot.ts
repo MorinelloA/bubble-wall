@@ -2,6 +2,7 @@ import { createRng } from "../core/rng";
 import { createStore, type Store } from "../core/store";
 import { createAudioContext } from "./audio/context";
 import { createAudioEngine, type AudioEngine } from "./audio/engine";
+import { blockGestures } from "./platform/device";
 import { createProblemLog, watchForProblems, type ProblemLog } from "./platform/errors";
 import { createSafeStorage, loadSettings, persistSettings } from "./platform/storage";
 import { createPowerControl, type PowerControl } from "./power";
@@ -79,8 +80,17 @@ export function boot(win: Window, seed: number): App {
     problems.record(message);
   };
   const power = createPowerControl(() => win.performance.now());
-  mountWall({ win, root, store, power, rng: createRng(seed), onProblem });
   const audio = startAudio(win, root, { store, power, seed, onProblem });
+  blockGestures(doc);
+  mountWall({
+    win,
+    root,
+    store,
+    power,
+    rng: createRng(seed),
+    onTouchSound: audio.play,
+    onProblem,
+  });
   const drawer = createDrawer({
     win,
     root,

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { expectNoViolations, firstTubeBase, openDrawer, startWall } from "./helpers";
+import { expectNoViolations, firstTubeBase, openDrawer, startWall, wallColor } from "./helpers";
 
 test("opens on a start screen with nothing an accessibility check objects to", async ({ page }) => {
   await page.goto("./");
@@ -95,4 +95,28 @@ test("the drawer can be used with the keyboard alone", async ({ page }) => {
   await page.keyboard.press("Escape");
   await expect(page.locator("aside.drawer")).not.toHaveClass(/is-open/);
   await expect(page.getByRole("button", { name: "Remote drawer" })).toBeFocused();
+});
+
+test("touching the wall lights the water under the finger, and it fades when let go", async ({
+  page,
+}) => {
+  await startWall(page);
+  await openDrawer(page);
+  await page.getByRole("button", { name: "Blue", exact: true }).click();
+  await page.keyboard.press("Escape");
+  await expect(page.locator("aside.drawer")).not.toHaveClass(/is-open/);
+
+  // A point half way up the first tube. The darkest of a few looks is the water
+  // itself, with no bubble drifting across the point.
+  const spot = { x: 0.09, y: 0.5 };
+  const brightness = async (): Promise<number> =>
+    (await wallColor(page, spot.x, spot.y)).reduce((sum, value) => sum + value, 0);
+  const resting = Math.min(await brightness(), await brightness(), await brightness());
+
+  const box = await page.locator("canvas.wall").boundingBox();
+  await page.mouse.move((box?.width ?? 0) * spot.x, (box?.height ?? 0) * spot.y);
+  await page.mouse.down();
+  await expect.poll(brightness).toBeGreaterThan(resting + 150);
+  await page.mouse.up();
+  await expect.poll(brightness, { timeout: 8000 }).toBeLessThan(resting + 60);
 });
