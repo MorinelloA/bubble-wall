@@ -10,6 +10,7 @@ import { colorHex } from "../../core/palette";
 import { initialQuality, MAX_BUBBLES, nextQuality } from "../../core/quality";
 import type { Rng } from "../../core/rng";
 import type { Store } from "../../core/store";
+import type { PowerControl } from "../power";
 import { drawWall, type Size } from "./renderer";
 import type { Pen } from "./sprites";
 
@@ -24,6 +25,7 @@ export interface WallDeps {
   readonly pen: Pen;
   readonly sprite: CanvasImageSource;
   readonly store: Store;
+  readonly power: PowerControl;
   readonly rng: Rng;
   /** Milliseconds, from a clock that only goes forward. */
   now(): number;
@@ -41,7 +43,7 @@ export interface Wall {
 }
 
 export function createWall(deps: WallDeps): Wall {
-  const { canvas, pen, store } = deps;
+  const { canvas, pen, store, power } = deps;
   const field = createField(MAX_BUBBLES);
   let size: Size = { width: 1, height: 1 };
   let tubes: Tube[] = [];
@@ -65,11 +67,13 @@ export function createWall(deps: WallDeps): Wall {
 
   const frame = (seconds: number): void => {
     const settings = store.get();
+    power.tick();
     if (!settings.paused) lightTime += seconds;
     stepField(field, {
       dt: seconds,
       tubes,
-      pumpOn: settings.bubblesOn,
+      // Switching off stops the pump at once, so the tubes empty as the light fades.
+      pumpOn: settings.bubblesOn && power.isOn(),
       speed: settings.bubbleSpeed,
       limit: quality.limit,
       rng: deps.rng,
@@ -82,7 +86,7 @@ export function createWall(deps: WallDeps): Wall {
       time: lightTime,
       tubes: tubes.length,
     });
-    drawWall(pen, size, { tubes, lights, field, level: 1 }, deps.sprite);
+    drawWall(pen, size, { tubes, lights, field, level: power.level() }, deps.sprite);
   };
 
   const tick = (): void => {

@@ -39,3 +39,34 @@ export const FLASH_SEQUENCE: readonly ColorId[] = [
   "purple",
   "white",
 ];
+
+export type RemoteGroup = "power" | "brightness" | "colors" | "modes";
+
+/** One key of the real remote. Names, colours and order match the remote app he already uses. */
+export interface RemoteKey {
+  readonly id: string;
+  readonly label: string;
+  /** The light colour for colour keys; the rim and icon colour for the rest. */
+  readonly color: string;
+  readonly group: RemoteGroup;
+}
+
+const key = (id: string, label: string, color: string, group: RemoteGroup): RemoteKey => ({
+  id,
+  label,
+  color,
+  group,
+});
+
+/** The 24 keys, in the order of the remote: 4 across, 6 down. */
+export const REMOTE_KEYS: readonly RemoteKey[] = [
+  key("on", "On", "#3ddc84", "power"),
+  key("off", "Off", "#ff5a5f", "power"),
+  key("dimmer", "Dimmer", "#8fa3c8", "brightness"),
+  key("brighter", "Brighter", "#ffd95a", "brightness"),
+  ...COLORS.map(([id, label, hex]) => key(id, label, hex, "colors")),
+  key("flash", "Flash", "#ffd95a", "modes"),
+  key("strobe", "Strobe", "#7fd4ff", "modes"),
+  key("fade", "Fade", "#c79bff", "modes"),
+  key("smooth", "Smooth", "#ff9ecb", "modes"),
+];

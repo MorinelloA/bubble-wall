@@ -57,6 +57,23 @@ describe("boot", () => {
     expect(app.problems.list().at(-1)?.message).toBe("boom");
   });
 
+  it("opens on the start screen, with the wall dark until it is tapped", () => {
+    const root = addRoot();
+    const app = boot(window, 3);
+    expect(app.power.isOn()).toBe(false);
+    root.querySelector<HTMLButtonElement>(".start-button")?.click();
+    expect(app.power.isOn()).toBe(true);
+  });
+
+  it("puts the remote and the Wall tab in the drawer", () => {
+    const root = addRoot();
+    const app = boot(window, 3);
+    app.drawer.open();
+    const tabs = [...root.querySelectorAll('[role="tab"]')].map((tab) => tab.textContent);
+    expect(tabs).toEqual(["Remote", "Wall"]);
+    expect(root.querySelectorAll(".remote button")).toHaveLength(24);
+  });
+
   it("starts from main.ts", async () => {
     const root = addRoot();
     await import("../../src/app/main");

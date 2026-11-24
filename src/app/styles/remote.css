@@ -1,0 +1,197 @@
+/* The remote: every key is a bubble, as in the remote app he already uses. */
+
+.remote {
+  display: grid;
+  grid-template-columns: repeat(4, var(--b));
+  grid-auto-rows: var(--b);
+  gap: var(--gap);
+  justify-content: center;
+}
+
+.bubble {
+  --c: #ffffff;
+  position: relative;
+  width: var(--b);
+  height: var(--b);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: #06223a;
+  cursor: pointer;
+  /* Solid colour bubble: bright highlight top left, deeper shade underneath. */
+  background:
+    radial-gradient(
+      circle at 31% 26%,
+      rgb(255 255 255 / 0.9) 0,
+      rgb(255 255 255 / 0.35) 9%,
+      transparent 24%
+    ),
+    radial-gradient(circle at 50% 118%, rgb(255 255 255 / 0.28), transparent 45%),
+    radial-gradient(circle at 42% 36%, var(--c) 30%, color-mix(in srgb, var(--c) 68%, #021020) 100%);
+  box-shadow:
+    inset 0 calc(var(--b) * -0.05) calc(var(--b) * 0.12) rgb(0 10 30 / 0.3),
+    inset 0 0 0 calc(var(--b) * 0.012) rgb(255 255 255 / 0.22),
+    0 calc(var(--b) * 0.05) calc(var(--b) * 0.14) rgb(0 8 24 / 0.5),
+    0 0 calc(var(--b) * 0.3) color-mix(in srgb, var(--c) 45%, transparent);
+  transition:
+    transform 0.22s cubic-bezier(0.3, 1.6, 0.5, 1),
+    filter 0.2s ease;
+}
+
+/* Glass bubble for power, brightness and shows: clear, with a coloured rim and icon. */
+.bubble.glass {
+  color: var(--c);
+  background:
+    radial-gradient(
+      circle at 31% 26%,
+      rgb(255 255 255 / 0.7) 0,
+      rgb(255 255 255 / 0.2) 9%,
+      transparent 24%
+    ),
+    radial-gradient(
+      circle at 50% 115%,
+      color-mix(in srgb, var(--c) 55%, transparent),
+      transparent 55%
+    ),
+    radial-gradient(
+      circle at 50% 45%,
+      rgb(255 255 255 / 0.05) 40%,
+      color-mix(in srgb, var(--c) 30%, transparent) 100%
+    );
+  box-shadow:
+    inset 0 0 0 calc(var(--b) * 0.03) color-mix(in srgb, var(--c) 85%, transparent),
+    inset 0 0 calc(var(--b) * 0.2) color-mix(in srgb, var(--c) 30%, transparent),
+    0 calc(var(--b) * 0.05) calc(var(--b) * 0.14) rgb(0 8 24 / 0.45);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--b) * 0.02);
+}
+
+.bubble svg {
+  width: calc(var(--b) * 0.44);
+  height: calc(var(--b) * 0.44);
+  flex: none;
+  pointer-events: none;
+  filter: drop-shadow(0 0 calc(var(--b) * 0.06) color-mix(in srgb, var(--c) 60%, transparent));
+}
+
+.bubble .name {
+  font-size: max(11px, calc(var(--b) * 0.15));
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  line-height: 1;
+  color: var(--foam);
+  pointer-events: none;
+}
+
+.bubble:focus-visible {
+  outline: calc(var(--b) * 0.035) solid var(--foam);
+  outline-offset: calc(var(--b) * 0.04);
+}
+
+/* The key in effect wears a ring, so it is not shown by colour alone. */
+.bubble[aria-pressed="true"]::after {
+  content: "";
+  position: absolute;
+  inset: calc(var(--b) * -0.055);
+  border-radius: 50%;
+  border: calc(var(--b) * 0.035) solid var(--foam);
+  box-shadow: 0 0 calc(var(--b) * 0.16) rgb(244 251 255 / 0.6);
+  pointer-events: none;
+}
+
+/* Finger down: squish straight away. */
+.bubble.is-pressed {
+  transform: scale(0.88);
+  transition-duration: 0.05s;
+  filter: brightness(1.15);
+}
+
+.bubble.is-done {
+  animation: pop 0.45s cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(0.88);
+  }
+  55% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* The start screen: one calm bubble to tap. */
+.start {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(120% 80% at 50% 110%, var(--deep), var(--tank) 60%, #020a14);
+  transition: opacity 0.6s ease;
+}
+
+.start.is-leaving {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.start-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4vmin;
+  padding: 6vmin;
+  border: 0;
+  border-radius: 8vmin;
+  background: none;
+  color: var(--foam);
+  cursor: pointer;
+}
+
+.start-bubble {
+  width: 34vmin;
+  height: 34vmin;
+  border-radius: 50%;
+  background:
+    radial-gradient(
+      circle at 31% 26%,
+      rgb(255 255 255 / 0.85) 0,
+      rgb(255 255 255 / 0.25) 9%,
+      transparent 24%
+    ),
+    radial-gradient(circle at 50% 115%, rgb(47 155 255 / 0.55), transparent 55%),
+    radial-gradient(circle at 50% 45%, rgb(255 255 255 / 0.05) 40%, rgb(47 155 255 / 0.3) 100%);
+  box-shadow:
+    inset 0 0 0 0.9vmin rgb(191 233 255 / 0.75),
+    inset 0 0 7vmin rgb(47 155 255 / 0.35),
+    0 0 10vmin rgb(47 155 255 / 0.35);
+  animation: bob 4.5s ease-in-out infinite;
+}
+
+.start-words {
+  font-size: max(22px, 5vmin);
+  font-weight: 800;
+  letter-spacing: 0.03em;
+}
+
+@keyframes bob {
+  0%,
+  100% {
+    transform: translateY(1.5vmin);
+  }
+  50% {
+    transform: translateY(-1.5vmin);
+  }
+}
+
+/* Nothing behind the start screen can be reached until the wall has started. */
+#app.not-started .drawer-tab {
+  visibility: hidden;
+}

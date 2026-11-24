@@ -8,6 +8,7 @@ import { mountWall } from "../../src/app/wall/mount";
 import { drawWall } from "../../src/app/wall/renderer";
 import { drawBubbleSprite, SPRITE_SIZE } from "../../src/app/wall/sprites";
 import { createWall } from "../../src/app/wall/wall";
+import { testPower } from "./fakes/page";
 import { recordingPen } from "./fakes/pen";
 
 const sizedCanvas = (width: number, height: number): HTMLCanvasElement => {
@@ -19,6 +20,9 @@ const sizedCanvas = (width: number, height: number): HTMLCanvasElement => {
 
 const harness = (settings: Partial<Settings> = {}, pixelRatio = 1) => {
   const recording = recordingPen();
+  const { power, wait } = testPower();
+  power.on();
+  wait(5000);
   const canvas = sizedCanvas(800, 600);
   const store = createStore({ ...defaultSettings(), ...settings });
   const pending = new Map<number, () => void>();
@@ -30,6 +34,7 @@ const harness = (settings: Partial<Settings> = {}, pixelRatio = 1) => {
     pen: recording.pen,
     sprite: canvas,
     store,
+    power,
     rng: createRng(1),
     now: () => clock,
     requestFrame: (callback) => {
@@ -59,7 +64,18 @@ const harness = (settings: Partial<Settings> = {}, pixelRatio = 1) => {
     advance();
     return recording.named("addColorStop").at(0)?.args.at(1);
   };
-  return { ...recording, canvas, store, wall, pending, onProblem, advance, baseColor };
+  return {
+    ...recording,
+    canvas,
+    store,
+    wall,
+    pending,
+    onProblem,
+    advance,
+    baseColor,
+    power,
+    wait,
+  };
 };
 
 describe("drawBubbleSprite", () => {
@@ -194,6 +210,27 @@ describe("createWall", () => {
     expect(baseColor()).toBe("rgb(255 255 255 / 1)");
   });
 
+  it("fades to dark and lets the bubbles float out when switched off", () => {
+    const { wall, power, wait, advance, baseColor, calls, named } = harness({
+      mode: "static",
+      colorId: "white",
+      brightness: 8,
+    });
+    wall.resize();
+    wall.start();
+    advance(1000 / 60, 600);
+    power.off();
+    wait(1000);
+    expect(baseColor()).toBe("rgb(128 128 128 / 1)");
+    wait(1000);
+    advance(1000 / 60, 60 * 20);
+    expect(power.level()).toBe(0);
+    expect(baseColor()).toBe("rgb(0 0 0 / 1)");
+    calls.length = 0;
+    advance();
+    expect(named("drawImage")).toHaveLength(0);
+  });
+
   it("redraws with the new tubes when the layout changes", () => {
     const { wall, store, advance, calls, named } = harness();
     wall.resize();
@@ -244,6 +281,7 @@ describe("mountWall", () => {
     win: window,
     root: document.body,
     store: createStore(defaultSettings()),
+    power: testPower().power,
     rng: createRng(1),
     onProblem: vi.fn(),
   });

@@ -1,6 +1,7 @@
 /** Puts the wall on the page and keeps it running while the app is visible. */
 import type { Rng } from "../../core/rng";
 import type { Store } from "../../core/store";
+import type { PowerControl } from "../power";
 import { drawBubbleSprite, SPRITE_SIZE } from "./sprites";
 import { createWall, type Wall } from "./wall";
 
@@ -8,6 +9,7 @@ export interface WallHost {
   readonly win: Window;
   readonly root: HTMLElement;
   readonly store: Store;
+  readonly power: PowerControl;
   readonly rng: Rng;
   readonly onProblem: (message: string) => void;
 }
@@ -40,6 +42,7 @@ export function mountWall(host: WallHost): Wall | null {
     pen,
     sprite: spriteCanvas,
     store: host.store,
+    power: host.power,
     rng: host.rng,
     now: () => win.performance.now(),
     requestFrame: (callback) => win.requestAnimationFrame(callback),

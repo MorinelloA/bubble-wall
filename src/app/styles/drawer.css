@@ -1,0 +1,284 @@
+/* The drawer and its pull tab. */
+
+#app {
+  /* Drawer width, and the size of one remote key: four across, six down. */
+  --w: min(420px, calc(100vw - 64px));
+  --pad: 16px;
+  --gap: 12px;
+  --b: min(
+    calc((var(--w) - 2 * var(--pad) - 3 * var(--gap)) / 4),
+    calc((100dvh - var(--safe-t) - var(--safe-b) - 124px - 5 * var(--gap)) / 6)
+  );
+}
+
+.drawer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: calc(var(--w) + var(--safe-r));
+  padding: calc(var(--safe-t) + 10px) calc(var(--safe-r) + var(--pad)) calc(var(--safe-b) + 12px)
+    var(--pad);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: rgb(5 20 38 / 0.9);
+  -webkit-backdrop-filter: blur(18px) saturate(1.3);
+  backdrop-filter: blur(18px) saturate(1.3);
+  border-left: 1px solid rgb(191 233 255 / 0.18);
+  box-shadow: -18px 0 48px rgb(0 0 0 / 0.5);
+  transform: translateX(104%);
+  visibility: hidden;
+  transition:
+    transform 0.38s cubic-bezier(0.2, 0.9, 0.25, 1),
+    visibility 0s 0.38s;
+}
+
+.drawer.is-open {
+  transform: none;
+  visibility: visible;
+  transition: transform 0.38s cubic-bezier(0.2, 0.9, 0.25, 1);
+}
+
+#app[data-side="left"] .drawer {
+  right: auto;
+  left: 0;
+  width: calc(var(--w) + var(--safe-l));
+  padding-right: var(--pad);
+  padding-left: calc(var(--safe-l) + var(--pad));
+  border-left: 0;
+  border-right: 1px solid rgb(191 233 255 / 0.18);
+  box-shadow: 18px 0 48px rgb(0 0 0 / 0.5);
+  transform: translateX(-104%);
+}
+
+#app[data-side="left"] .drawer.is-open {
+  transform: none;
+}
+
+/* The pull tab: a small grip half way up the edge. Faint, fainter when left alone. */
+.drawer-tab {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  width: 44px;
+  height: 120px;
+  margin: -60px 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: 22px 0 0 22px;
+  background: rgb(5 20 38 / 0.55);
+  box-shadow: inset 1px 0 0 rgb(191 233 255 / 0.35);
+  color: var(--foam);
+  opacity: 0.6;
+  cursor: pointer;
+  transition:
+    opacity 0.8s ease,
+    right 0.38s cubic-bezier(0.2, 0.9, 0.25, 1),
+    left 0.38s cubic-bezier(0.2, 0.9, 0.25, 1);
+}
+
+.drawer-tab svg {
+  width: 26px;
+  height: 26px;
+  pointer-events: none;
+}
+
+.drawer-tab.is-idle {
+  opacity: 0.16;
+}
+
+.drawer-tab.is-needed,
+.drawer-tab:focus-visible,
+#app.drawer-open .drawer-tab {
+  opacity: 0.9;
+}
+
+#app.drawer-open .drawer-tab {
+  right: calc(var(--w) + var(--safe-r));
+}
+
+#app[data-side="left"] .drawer-tab {
+  right: auto;
+  left: 0;
+  border-radius: 0 22px 22px 0;
+  box-shadow: inset -1px 0 0 rgb(191 233 255 / 0.35);
+}
+
+#app[data-side="left"].drawer-open .drawer-tab {
+  right: auto;
+  left: calc(var(--w) + var(--safe-l));
+}
+
+/* Tabs across the top of the drawer. */
+.drawer-tabs {
+  display: flex;
+  gap: 8px;
+  flex: none;
+}
+
+.drawer-tab-button {
+  flex: 1;
+  min-height: 60px;
+  padding: 6px 4px;
+  border: 0;
+  border-radius: 16px;
+  background: rgb(191 233 255 / 0.08);
+  color: var(--dim);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  cursor: pointer;
+}
+
+.drawer-tab-button svg {
+  width: 26px;
+  height: 26px;
+}
+
+.drawer-tab-button .name {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.drawer-tab-button[aria-selected="true"] {
+  background: rgb(191 233 255 / 0.22);
+  color: var(--foam);
+  box-shadow: inset 0 0 0 2px rgb(191 233 255 / 0.6);
+}
+
+.drawer-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Blocks inside a panel. */
+.block {
+  margin: 0 0 14px;
+}
+
+.block-title {
+  margin: 0 0 8px;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--dim);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--gap);
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--gap);
+}
+
+/* A tile: a square-ish toggle with an icon and a word. */
+.tile {
+  min-height: 76px;
+  padding: 8px 6px;
+  border: 0;
+  border-radius: 20px;
+  background: rgb(191 233 255 / 0.09);
+  color: var(--dim);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  transition:
+    transform 0.2s cubic-bezier(0.3, 1.6, 0.5, 1),
+    background 0.2s ease;
+}
+
+.tile svg {
+  width: 30px;
+  height: 30px;
+}
+
+.tile .name {
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.tile[aria-pressed="true"] {
+  background: rgb(191 233 255 / 0.26);
+  color: var(--foam);
+  box-shadow: inset 0 0 0 3px var(--rim);
+}
+
+.tile.is-pressed,
+.round.is-pressed,
+.drawer-tab-button.is-pressed {
+  transform: scale(0.93);
+}
+
+.row .tile {
+  flex: none;
+  width: 96px;
+}
+
+/* Less and more around a row of dots. */
+.stepper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.round {
+  flex: none;
+  width: 60px;
+  height: 60px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(191 233 255 / 0.14);
+  color: var(--foam);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+.round svg {
+  width: 28px;
+  height: 28px;
+}
+
+.round:disabled {
+  opacity: 0.35;
+}
+
+.dots {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgb(191 233 255 / 0.18);
+}
+
+.dot.is-lit {
+  background: var(--rim);
+  box-shadow: 0 0 8px rgb(191 233 255 / 0.7);
+}
