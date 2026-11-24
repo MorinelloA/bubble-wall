@@ -10,6 +10,10 @@ The site is published from the LandonArcher repo, which copies this project's bu
 
 A deploy also republishes the Game Room, Marble Run and Pictures from their folders as they stand. Check they have no half-finished changes first.
 
+## Nothing is added to the page
+
+Cloudflare Web Analytics is switched on for landonarcher.com, and Cloudflare adds its beacon script to every page it serves. This app promises to send nothing anywhere, so the site sends `Cache-Control: no-transform` for `/bubble-wall/*`, which tells Cloudflare to leave the page alone. `check-site.ps1` checks the header is there. If it ever goes missing, the app's Content-Security-Policy still blocks the script, and the end-to-end test "talks to no other site" fails against the live address.
+
 ## Roll back
 
 In `C:\Repos\LandonArcher\cloudflare`: `npx wrangler rollback`. That returns the whole site to the previous deploy.
