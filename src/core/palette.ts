@@ -22,3 +22,20 @@ const COLORS = [
 export type ColorId = (typeof COLORS)[number][0];
 
 export const COLOR_IDS: readonly ColorId[] = COLORS.map(([id]) => id);
+
+const HEX_BY_ID: ReadonlyMap<string, string> = new Map(COLORS.map(([id, , hex]) => [id, hex]));
+
+export function colorHex(id: ColorId): string {
+  return HEX_BY_ID.get(id) ?? "#ffffff";
+}
+
+/** The colours Flash jumps through, in order. */
+export const FLASH_SEQUENCE: readonly ColorId[] = [
+  "red",
+  "green",
+  "blue",
+  "yellow",
+  "cyan",
+  "purple",
+  "white",
+];

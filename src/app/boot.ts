@@ -1,13 +1,13 @@
-import { createRng, type Rng } from "../core/rng";
+import { createRng } from "../core/rng";
 import { createStore, type Store } from "../core/store";
 import { createProblemLog, watchForProblems, type ProblemLog } from "./platform/errors";
 import { createSafeStorage, loadSettings, persistSettings } from "./platform/storage";
+import { mountWall } from "./wall/mount";
 
 export interface App {
   readonly root: HTMLElement;
   readonly store: Store;
   readonly problems: ProblemLog;
-  readonly rng: Rng;
 }
 
 /** Finds the app's root element and starts everything inside it. */
@@ -36,6 +36,17 @@ export function boot(win: Window, seed: number): App {
     persistence.flush();
   });
 
+  const rng = createRng(seed);
+  mountWall({
+    win,
+    root,
+    store,
+    rng,
+    onProblem: (message) => {
+      problems.record(message);
+    },
+  });
+
   root.dataset.ready = "true";
-  return { root, store, problems, rng: createRng(seed) };
+  return { root, store, problems };
 }
