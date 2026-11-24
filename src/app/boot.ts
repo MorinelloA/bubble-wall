@@ -3,7 +3,7 @@ import { createRng } from "../core/rng";
 import { createStore, type Store } from "../core/store";
 import { createAudioContext } from "./audio/context";
 import { createAudioEngine, type AudioEngine } from "./audio/engine";
-import { blockGestures } from "./platform/device";
+import { blockGestures, keepAwake, registerServiceWorker } from "./platform/device";
 import { createProblemLog, watchForProblems, type ProblemLog } from "./platform/errors";
 import {
   createSafeStorage,
@@ -89,8 +89,16 @@ function startAudio(win: Window, root: HTMLElement, needs: AudioNeeds): AudioEng
   return audio;
 }
 
+export interface BootOptions {
+  /** Seeds the bubbles, so a test sees the same wall every time. */
+  readonly seed: number;
+  /** Save the app for offline use. On for the published build, off while developing. */
+  readonly offline: boolean;
+}
+
 /** Finds the app's root element and starts everything inside it. */
-export function boot(win: Window, seed: number): App {
+export function boot(win: Window, options: BootOptions): App {
+  const { seed } = options;
   const doc = win.document;
   const root = doc.getElementById("app");
   if (!root) throw new Error("Bubble Wall needs an element with id 'app'.");
@@ -102,6 +110,8 @@ export function boot(win: Window, seed: number): App {
   const power = createPowerControl(() => win.performance.now());
   const audio = startAudio(win, root, { store, power, seed, onProblem });
   blockGestures(doc);
+  const stayAwake = keepAwake(win);
+  if (options.offline) registerServiceWorker(win, onProblem);
   mountWall({
     win,
     root,
@@ -138,6 +148,7 @@ export function boot(win: Window, seed: number): App {
   showStart(win, root, () => {
     power.on();
     audio.touch();
+    stayAwake();
   });
 
   root.dataset.ready = "true";

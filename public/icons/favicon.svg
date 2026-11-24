@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Bubble Wall app icon: four lit tubes with bubbles rising in them. Full-bleed and
+       opaque (iOS rounds the corners itself). The artwork stays inside the middle 80%,
+       so the maskable version is safe too. -->
+  <defs>
+    <linearGradient id="tank" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0b2f57"/>
+      <stop offset="1" stop-color="#03101f"/>
+    </linearGradient>
+    <linearGradient id="pink" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#ff5cb4"/>
+      <stop offset="1" stop-color="#5a1a4c"/>
+    </linearGradient>
+    <linearGradient id="amber" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#ffc21f"/>
+      <stop offset="1" stop-color="#5c4208"/>
+    </linearGradient>
+    <linearGradient id="aqua" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#19e3d2"/>
+      <stop offset="1" stop-color="#0a4d55"/>
+    </linearGradient>
+    <linearGradient id="violet" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#8f5bff"/>
+      <stop offset="1" stop-color="#2a1568"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#000000" stop-opacity="0.45"/>
+      <stop offset="0.3" stop-color="#ffffff" stop-opacity="0.12"/>
+      <stop offset="0.5" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0.5"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="512" height="512" fill="url(#tank)"/>
+
+  <g>
+    <rect x="72" y="72" width="80" height="368" rx="18" fill="url(#pink)"/>
+    <rect x="168" y="72" width="80" height="368" rx="18" fill="url(#amber)"/>
+    <rect x="264" y="72" width="80" height="368" rx="18" fill="url(#aqua)"/>
+    <rect x="360" y="72" width="80" height="368" rx="18" fill="url(#violet)"/>
+  </g>
+  <g fill="url(#glass)">
+    <rect x="72" y="72" width="80" height="368" rx="18"/>
+    <rect x="168" y="72" width="80" height="368" rx="18"/>
+    <rect x="264" y="72" width="80" height="368" rx="18"/>
+    <rect x="360" y="72" width="80" height="368" rx="18"/>
+  </g>
+
+  <!-- Bubbles: clear, with a bright rim and a highlight. -->
+  <g fill="#ffffff" fill-opacity="0.16" stroke="#ffffff" stroke-opacity="0.85" stroke-width="5">
+    <circle cx="112" cy="352" r="24"/>
+    <circle cx="124" cy="232" r="14"/>
+    <circle cx="100" cy="136" r="18"/>
+    <circle cx="208" cy="392" r="16"/>
+    <circle cx="200" cy="280" r="26"/>
+    <circle cx="220" cy="160" r="12"/>
+    <circle cx="304" cy="330" r="20"/>
+    <circle cx="296" cy="200" r="15"/>
+    <circle cx="312" cy="116" r="22"/>
+    <circle cx="400" cy="380" r="13"/>
+    <circle cx="408" cy="270" r="23"/>
+    <circle cx="392" cy="150" r="16"/>
+  </g>
+  <g fill="#ffffff" fill-opacity="0.9">
+    <circle cx="104" cy="342" r="6"/>
+    <circle cx="94" cy="130" r="5"/>
+    <circle cx="191" cy="270" r="7"/>
+    <circle cx="297" cy="322" r="5"/>
+    <circle cx="304" cy="107" r="6"/>
+    <circle cx="400" cy="261" r="6"/>
+  </g>
+</svg>

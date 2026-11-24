@@ -24,7 +24,8 @@
     "audit:deps": "npm audit --json | node scripts/audit-gate.mjs high",
     "licenses": "npm query \"*\" | node scripts/licenses.mjs",
     "check": "npm run lint && npm run format:check && npm run typecheck && npm run test && npm run layers && npm run deadcode && npm run dupes",
-    "check:full": "npm run check && npm run build && npm run e2e && npm run audit:deps && npm run licenses"
+    "check:full": "npm run check && npm run build && npm run e2e && npm run audit:deps && npm run licenses",
+    "icons": "node scripts/make-icons.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.1",
@@ -41,6 +42,7 @@
     "jscpd": "5.4.3",
     "knip": "6.48.0",
     "prettier": "3.10.1",
+    "sharp": "0.35.5",
     "typescript": "6.0.3",
     "typescript-eslint": "8.74.0",
     "vite": "8.3.8",

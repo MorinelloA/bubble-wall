@@ -16,7 +16,15 @@ In `C:\Repos\LandonArcher\cloudflare`: `npx wrangler rollback`. That returns the
 
 ## Updates on the iPad
 
-A new version is fetched in the background and used the next time the app is opened. It never reloads in the middle of a session.
+A new version is fetched in the background and used the next time the app is opened. It never reloads in the middle of a session. If the iPad keeps showing the old version, close the app fully (swipe it away in the app switcher) and open it again.
+
+## First install
+
+On the iPad, open https://landonarcher.com/bubble-wall/ in Safari, tap Share, then Add to Home Screen. Open it once while online so it can save itself for offline use.
+
+## Sound stops after reopening
+
+iPadOS has a bug where a Home Screen web app can lose sound after it is reopened. The app notices within a second and shows "Tap for sound"; one tap rebuilds the audio. If that tap does not bring sound back, close the app fully and open it again. If it keeps happening, the fix is to wrap the app natively (see docs/adr/0001).
 
 ## Backups
 

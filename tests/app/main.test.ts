@@ -24,18 +24,18 @@ describe("boot", () => {
   it("marks the root as ready and loads saved settings", () => {
     localStorage.setItem(`${STORAGE_PREFIX}settings`, JSON.stringify({ colorId: "pink" }));
     const root = addRoot();
-    const app = boot(window, 3);
+    const app = boot(window, { seed: 3, offline: false });
     expect(root.dataset.ready).toBe("true");
     expect(app.store.get().colorId).toBe("pink");
   });
 
   it("says what is missing when there is no root", () => {
-    expect(() => boot(window, 3)).toThrow(/id 'app'/);
+    expect(() => boot(window, { seed: 3, offline: false })).toThrow(/id 'app'/);
   });
 
   it("saves a pending change when the page is hidden", () => {
     addRoot();
-    const app = boot(window, 3);
+    const app = boot(window, { seed: 3, offline: false });
     app.store.update((s) => ({ ...s, brightness: 1 }));
     window.dispatchEvent(new Event("pagehide"));
     expect(localStorage.getItem(`${STORAGE_PREFIX}settings`)).toContain('"brightness":1');
@@ -43,7 +43,7 @@ describe("boot", () => {
 
   it("saves a pending change when the app goes to the background", () => {
     addRoot();
-    const app = boot(window, 3);
+    const app = boot(window, { seed: 3, offline: false });
     app.store.update((s) => ({ ...s, brightness: 2 }));
     vi.spyOn(document, "visibilityState", "get").mockReturnValue("hidden");
     document.dispatchEvent(new Event("visibilitychange"));
@@ -52,14 +52,14 @@ describe("boot", () => {
 
   it("logs uncaught errors without showing anything", () => {
     addRoot();
-    const app = boot(window, 3);
+    const app = boot(window, { seed: 3, offline: false });
     window.dispatchEvent(new ErrorEvent("error", { message: "boom" }));
     expect(app.problems.list().at(-1)?.message).toBe("boom");
   });
 
   it("opens on the start screen, with the wall dark until it is tapped", () => {
     const root = addRoot();
-    const app = boot(window, 3);
+    const app = boot(window, { seed: 3, offline: false });
     expect(app.power.isOn()).toBe(false);
     root.querySelector<HTMLButtonElement>(".start-button")?.click();
     expect(app.power.isOn()).toBe(true);
@@ -67,7 +67,7 @@ describe("boot", () => {
 
   it("puts the remote and the Wall tab in the drawer", () => {
     const root = addRoot();
-    const app = boot(window, 3);
+    const app = boot(window, { seed: 3, offline: false });
     app.drawer.open();
     const tabs = [...root.querySelectorAll('[role="tab"]')].map((tab) => tab.textContent);
     expect(tabs).toEqual(["Remote", "Sounds", "Wall", "More"]);
@@ -76,7 +76,7 @@ describe("boot", () => {
 
   it("runs silently, with the hint showing, on a device with no Web Audio", () => {
     const root = addRoot();
-    const app = boot(window, 3);
+    const app = boot(window, { seed: 3, offline: false });
     root.querySelector<HTMLButtonElement>(".start-button")?.click();
     expect(app.audio.phase()).toBe("silent");
     expect(app.power.isOn()).toBe(true);
@@ -86,7 +86,7 @@ describe("boot", () => {
 
   it("tells the sound engine when the app goes to the background and comes back", () => {
     addRoot();
-    const app = boot(window, 3);
+    const app = boot(window, { seed: 3, offline: false });
     const hidden = vi.spyOn(app.audio, "hidden");
     const visible = vi.spyOn(app.audio, "visible");
     const visibility = vi.spyOn(document, "visibilityState", "get");
@@ -101,7 +101,7 @@ describe("boot", () => {
   it("reset puts settings back and forgets only what this app saved", () => {
     localStorage.setItem("marblerun:progress", "level 7");
     const root = addRoot();
-    const app = boot(window, 3);
+    const app = boot(window, { seed: 3, offline: false });
     app.store.update((s) => ({ ...s, colorId: "pink", volumeCap: 0.1 }));
     window.dispatchEvent(new ErrorEvent("error", { message: "boom" }));
 

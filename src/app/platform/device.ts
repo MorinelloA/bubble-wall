@@ -16,3 +16,38 @@ export function blockGestures(doc: Document): void {
     );
   }
 }
+
+/**
+ * Saves the app for offline use. Only over http or https: inside a native wrapper
+ * the files are already on the device and there is no service worker to register.
+ */
+export function registerServiceWorker(win: Window, onProblem: (message: string) => void): void {
+  const { protocol } = win.location;
+  const container = (win.navigator as Partial<Navigator>).serviceWorker;
+  if (!container || (protocol !== "https:" && protocol !== "http:")) return;
+  container.register("./sw.js", { scope: "./" }).catch((error: unknown) => {
+    onProblem(`Offline copy could not be saved: ${String(error)}`);
+  });
+}
+
+interface WakeLockLike {
+  request(type: "screen"): Promise<unknown>;
+}
+
+/**
+ * Keeps the screen from dimming and sleeping while the wall is showing. The iPad
+ * drops the lock whenever the app is hidden, so it is asked for again on return.
+ * Where it is unavailable or refused, the app simply runs without it.
+ * Returns a function that asks again; call it from a touch.
+ */
+export function keepAwake(win: Window): () => void {
+  const doc = win.document;
+  const wakeLock = (win.navigator as Navigator & { wakeLock?: WakeLockLike }).wakeLock;
+  const ask = (): void => {
+    if (!wakeLock || doc.visibilityState !== "visible") return;
+    wakeLock.request("screen").catch(() => undefined);
+  };
+  doc.addEventListener("visibilitychange", ask);
+  ask();
+  return ask;
+}

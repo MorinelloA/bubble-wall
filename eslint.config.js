@@ -97,4 +97,17 @@ export default tseslint.config(
       globals: { process: "readonly", console: "readonly", module: "writable", URL: "readonly" },
     },
   },
+  {
+    // The service worker template: it runs in a worker, and its two placeholders
+    // are filled in by build/pwa.ts.
+    files: ["build/sw.template.js"],
+    languageOptions: {
+      globals: {
+        self: "readonly",
+        caches: "readonly",
+        fetch: "readonly",
+        __FILES__: "readonly",
+      },
+    },
+  },
 );

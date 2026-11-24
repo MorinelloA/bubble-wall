@@ -20,7 +20,7 @@ const allowed = new Set([
 
 // Tools that only run on the developer's machine and in CI, and are never part of
 // what is published, may also carry these. The app itself ships no dependencies.
-const allowedForTooling = new Set(["LGPL-3.0-only"]);
+const allowedForTooling = new Set(["LGPL-3.0-only", "LGPL-3.0-or-later"]);
 
 const packages = JSON.parse(readFileSync(0, "utf8"));
 if (!Array.isArray(packages) || packages.length < 2) {
