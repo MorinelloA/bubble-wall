@@ -111,6 +111,43 @@ export function stepper(doc: Document, spec: StepperSpec): Stepper {
   };
 }
 
+export interface Slider {
+  readonly element: HTMLElement;
+  /** Shows a value from 0 to 1. */
+  readonly show: (value: number) => void;
+}
+
+export interface SliderSpec {
+  readonly label: string;
+  /** Called with a value from 0 to 1 as the slider moves. */
+  readonly onInput: (value: number) => void;
+}
+
+/** A labelled slider from 0 to 1. The label is the visible name and the spoken one. */
+export function slider(doc: Document, spec: SliderSpec): Slider {
+  const element = el(doc, "label", "slider");
+  const input = el(doc, "input");
+  input.type = "range";
+  input.min = "0";
+  input.max = "100";
+  input.step = "1";
+  const fill = (): void => {
+    input.style.setProperty("--fill", `${input.value}%`);
+  };
+  input.addEventListener("input", () => {
+    fill();
+    spec.onInput(Number(input.value) / 100);
+  });
+  element.append(el(doc, "span", "slider-name", spec.label), input);
+  return {
+    element,
+    show(value) {
+      input.value = String(Math.round(value * 100));
+      fill();
+    },
+  };
+}
+
 /** A titled block inside a drawer panel. */
 export function section(doc: Document, title: string, ...children: HTMLElement[]): HTMLElement {
   const element = el(doc, "section", "block");

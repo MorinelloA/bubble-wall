@@ -90,7 +90,7 @@ function buildTabs(doc: Document, panels: readonly DrawerPanel[]): Tabs {
     const next = entries.at((selectedIndex() + step + entries.length) % entries.length);
     if (!next) return;
     select(next.id);
-    next.tab.focus();
+    next.tab.focus({ preventScroll: true });
   });
 
   const [first] = entries;
@@ -98,7 +98,8 @@ function buildTabs(doc: Document, panels: readonly DrawerPanel[]): Tabs {
   return {
     list,
     bodies: entries.map((entry) => entry.body),
-    focusSelected: () => entries.at(selectedIndex())?.tab.focus(),
+    // preventScroll: the drawer is still sliding in, and the page must not scroll to meet it.
+    focusSelected: () => entries.at(selectedIndex())?.tab.focus({ preventScroll: true }),
   };
 }
 
@@ -210,7 +211,7 @@ export function createDrawer(deps: DrawerDeps): Drawer {
     pull.setAttribute("aria-expanded", String(open));
     restartAutoClose();
     if (open) tabs.focusSelected();
-    else if (wasInside) pull.focus();
+    else if (wasInside) pull.focus({ preventScroll: true });
   };
   const wake = (): void => {
     pull.classList.remove("is-idle");

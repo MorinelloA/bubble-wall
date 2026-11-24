@@ -1,5 +1,6 @@
 /** The wall's power, as something the page can press and watch. */
 import { initialPower, powerLevel, tickPower, turnOff, turnOn } from "../core/power";
+import { createEmitter } from "../core/util";
 
 export interface PowerControl {
   /** 0 dark to 1 fully on, right now. */
@@ -16,12 +17,12 @@ export interface PowerControl {
 
 export function createPowerControl(now: () => number): PowerControl {
   let state = initialPower();
-  const listeners = new Set<() => void>();
+  const changes = createEmitter<undefined>();
   const move = (next: typeof state): void => {
     if (next === state) return;
     const changed = next.phase !== state.phase;
     state = next;
-    if (changed) for (const listener of listeners) listener();
+    if (changed) changes.emit(undefined);
   };
   return {
     level: () => powerLevel(state, now()),
@@ -35,11 +36,6 @@ export function createPowerControl(now: () => number): PowerControl {
     tick: () => {
       move(tickPower(state, now()));
     },
-    subscribe: (listener) => {
-      listeners.add(listener);
-      return () => {
-        listeners.delete(listener);
-      };
-    },
+    subscribe: changes.subscribe,
   };
 }

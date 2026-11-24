@@ -10,8 +10,12 @@ import {
   isFlashing,
   LIGHT_MODES,
   LIGHT_SPEED_STEPS,
+  type LayerId,
+  type LayerMix,
+  type LayerSetting,
   type Layout,
   type LightMode,
+  type NoiseColor,
   type Settings,
 } from "./settings";
 import type { Change } from "./store";
@@ -22,6 +26,20 @@ function patch(settings: Settings, changes: Partial<Settings>): Settings {
   const current = new Map<string, unknown>(Object.entries(settings));
   const same = Object.entries(changes).every(([name, value]) => current.get(name) === value);
   return same ? settings : { ...settings, ...changes };
+}
+
+function changeLayer(
+  settings: Settings,
+  id: LayerId,
+  change: (layer: LayerSetting) => LayerSetting,
+): Settings {
+  const entries = Object.entries(settings.layers).map(([name, layer]) =>
+    name === id ? [name, change(layer)] : [name, layer],
+  );
+  const before = new Map(Object.entries(settings.layers)).get(id);
+  const after = new Map(entries as [string, LayerSetting][]).get(id);
+  const same = before?.on === after?.on && before?.volume === after?.volume;
+  return same ? settings : { ...settings, layers: Object.fromEntries(entries) as LayerMix };
 }
 
 /** A colour key: that colour, held still. */
@@ -60,6 +78,28 @@ export const setLayout =
   (layout: Layout): Change =>
   (s) =>
     patch(s, { layout });
+
+/** Switches one sound layer on or off. */
+export const toggleLayer =
+  (id: LayerId): Change =>
+  (s) =>
+    changeLayer(s, id, (layer) => ({ ...layer, on: !layer.on }));
+
+/** Sets one sound layer's volume, from 0 to 1. */
+export const setLayerVolume =
+  (id: LayerId, volume: number): Change =>
+  (s) =>
+    changeLayer(s, id, (layer) => ({ ...layer, volume: clamp(volume, 0, 1) }));
+
+export const setNoiseColor =
+  (noiseColor: NoiseColor): Change =>
+  (s) =>
+    patch(s, { noiseColor });
+
+export const setMasterVolume =
+  (volume: number): Change =>
+  (s) =>
+    patch(s, { masterVolume: clamp(volume, 0, 1) });
 
 /** What pressing a key on the remote does: switch the power, or change a setting. */
 export type RemoteEffect =

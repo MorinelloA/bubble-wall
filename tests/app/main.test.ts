@@ -70,8 +70,32 @@ describe("boot", () => {
     const app = boot(window, 3);
     app.drawer.open();
     const tabs = [...root.querySelectorAll('[role="tab"]')].map((tab) => tab.textContent);
-    expect(tabs).toEqual(["Remote", "Wall"]);
+    expect(tabs).toEqual(["Remote", "Sounds", "Wall"]);
     expect(root.querySelectorAll(".remote button")).toHaveLength(24);
+  });
+
+  it("runs silently, with the hint showing, on a device with no Web Audio", () => {
+    const root = addRoot();
+    const app = boot(window, 3);
+    root.querySelector<HTMLButtonElement>(".start-button")?.click();
+    expect(app.audio.phase()).toBe("silent");
+    expect(app.power.isOn()).toBe(true);
+    expect(root.querySelector<HTMLElement>(".sound-hint")?.hidden).toBe(false);
+    expect(app.problems.list().some((problem) => /Sound/.test(problem.message))).toBe(true);
+  });
+
+  it("tells the sound engine when the app goes to the background and comes back", () => {
+    addRoot();
+    const app = boot(window, 3);
+    const hidden = vi.spyOn(app.audio, "hidden");
+    const visible = vi.spyOn(app.audio, "visible");
+    const visibility = vi.spyOn(document, "visibilityState", "get");
+    visibility.mockReturnValue("hidden");
+    document.dispatchEvent(new Event("visibilitychange"));
+    visibility.mockReturnValue("visible");
+    document.dispatchEvent(new Event("visibilitychange"));
+    expect(hidden).toHaveBeenCalledTimes(1);
+    expect(visible).toHaveBeenCalledTimes(1);
   });
 
   it("starts from main.ts", async () => {

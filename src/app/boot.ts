@@ -1,10 +1,13 @@
 import { createRng } from "../core/rng";
 import { createStore, type Store } from "../core/store";
+import { createAudioContext } from "./audio/context";
+import { createAudioEngine, type AudioEngine } from "./audio/engine";
 import { createProblemLog, watchForProblems, type ProblemLog } from "./platform/errors";
 import { createSafeStorage, loadSettings, persistSettings } from "./platform/storage";
 import { createPowerControl, type PowerControl } from "./power";
 import { createDrawer, type Drawer } from "./ui/drawer";
 import { createRemote } from "./ui/remote";
+import { createSoundHint, createSoundsPanel } from "./ui/sounds";
 import { showStart } from "./ui/start";
 import { createWallPanel } from "./ui/wallpanel";
 import { mountWall } from "./wall/mount";
@@ -15,6 +18,35 @@ export interface App {
   readonly problems: ProblemLog;
   readonly power: PowerControl;
   readonly drawer: Drawer;
+  readonly audio: AudioEngine;
+}
+
+interface AudioNeeds {
+  readonly store: Store;
+  readonly power: PowerControl;
+  readonly seed: number;
+  readonly onProblem: (message: string) => void;
+}
+
+/** Builds the sound engine and tells it about touches and about the app coming and going. */
+function startAudio(win: Window, root: HTMLElement, needs: AudioNeeds): AudioEngine {
+  const audio = createAudioEngine({
+    createContext: () => createAudioContext(win),
+    store: needs.store,
+    power: needs.power,
+    rng: createRng(needs.seed + 1),
+    timers: win,
+    onProblem: needs.onProblem,
+  });
+  // Safari only lets sound start from the end of a touch, a click or a key press.
+  for (const type of ["pointerup", "click", "keydown"]) {
+    root.addEventListener(type, audio.touch, { capture: true });
+  }
+  win.document.addEventListener("visibilitychange", () => {
+    if (win.document.visibilityState === "hidden") audio.hidden();
+    else audio.visible();
+  });
+  return audio;
 }
 
 /** Finds the app's root element and starts everything inside it. */
@@ -43,17 +75,12 @@ export function boot(win: Window, seed: number): App {
     persistence.flush();
   });
 
+  const onProblem = (message: string): void => {
+    problems.record(message);
+  };
   const power = createPowerControl(() => win.performance.now());
-  mountWall({
-    win,
-    root,
-    store,
-    power,
-    rng: createRng(seed),
-    onProblem: (message) => {
-      problems.record(message);
-    },
-  });
+  mountWall({ win, root, store, power, rng: createRng(seed), onProblem });
+  const audio = startAudio(win, root, { store, power, seed, onProblem });
   const drawer = createDrawer({
     win,
     root,
@@ -61,13 +88,16 @@ export function boot(win: Window, seed: number): App {
     power,
     panels: [
       { id: "remote", label: "Remote", icon: "remote", content: createRemote(doc, store, power) },
+      { id: "sounds", label: "Sounds", icon: "sound", content: createSoundsPanel(doc, store) },
       { id: "wall", label: "Wall", icon: "wall", content: createWallPanel(doc, store) },
     ],
   });
+  root.append(createSoundHint(doc, audio));
   showStart(win, root, () => {
     power.on();
+    audio.touch();
   });
 
   root.dataset.ready = "true";
-  return { root, store, problems, power, drawer };
+  return { root, store, problems, power, drawer, audio };
 }

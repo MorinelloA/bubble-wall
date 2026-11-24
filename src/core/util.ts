@@ -20,3 +20,25 @@ export type Fields = ReadonlyMap<string, unknown>;
 export function fieldsOf(value: unknown): Fields {
   return isRecord(value) ? new Map(Object.entries(value)) : new Map<string, unknown>();
 }
+
+/** A list of listeners that all hear the same thing. */
+export interface Emitter<T> {
+  readonly emit: (value: T) => void;
+  /** Returns a function that stops listening. */
+  readonly subscribe: (listener: (value: T) => void) => () => void;
+}
+
+export function createEmitter<T>(): Emitter<T> {
+  const listeners = new Set<(value: T) => void>();
+  return {
+    emit: (value) => {
+      for (const listener of listeners) listener(value);
+    },
+    subscribe: (listener) => {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+  };
+}
