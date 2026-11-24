@@ -1,0 +1,5 @@
+import "./styles/base.css";
+import { boot } from "./boot";
+
+// Wiring only: everything else lives in modules that tests can drive.
+boot(document, 1);

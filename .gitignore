@@ -1,0 +1,25 @@
+# Installed and built
+node_modules/
+dist/
+coverage/
+reports/
+.stryker-tmp/
+
+# Playwright output
+test-results/
+playwright-report/
+
+# Local tool settings and IDE state
+.claude/
+.vscode/
+.idea/
+
+# Secrets (none are needed, but never commit one)
+.env
+.env.*
+
+# Logs and OS artifacts
+*.log
+.DS_Store
+Thumbs.db
+desktop.ini

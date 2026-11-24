@@ -1,0 +1,8 @@
+{
+  "threshold": 3,
+  "minTokens": 60,
+  "path": ["src", "tests", "e2e"],
+  "format": ["typescript", "css"],
+  "reporters": ["console"],
+  "gitignore": true
+}
