@@ -25,12 +25,15 @@
     "licenses": "npm query \"*\" | node scripts/licenses.mjs",
     "check": "npm run lint && npm run format:check && npm run typecheck && npm run test && npm run layers && npm run deadcode && npm run dupes",
     "check:full": "npm run check && npm run build && npm run e2e && npm run audit:deps && npm run licenses",
-    "icons": "node scripts/make-icons.mjs"
+    "icons": "node scripts/make-icons.mjs",
+    "mutation": "stryker run"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.1",
     "@eslint/js": "10.0.1",
     "@playwright/test": "1.65.1",
+    "@stryker-mutator/core": "10.1.1",
+    "@stryker-mutator/vitest-runner": "10.1.1",
     "@types/node": "26.6.6",
     "@vitest/coverage-v8": "5.1.1",
     "@vitest/eslint-plugin": "1.6.28",

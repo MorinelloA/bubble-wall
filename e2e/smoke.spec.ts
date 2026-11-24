@@ -120,3 +120,39 @@ test("touching the wall lights the water under the finger, and it fades when let
   await page.mouse.up();
   await expect.poll(brightness, { timeout: 8000 }).toBeLessThan(resting + 60);
 });
+
+for (const size of [
+  { width: 1024, height: 768 },
+  { width: 768, height: 1024 },
+  { width: 1180, height: 820 },
+]) {
+  test(`the remote is four keys across, six down, and fits at ${String(size.width)}x${String(size.height)}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(size);
+    await startWall(page);
+    await openDrawer(page);
+
+    const keys = page.locator(".remote button");
+    await expect(keys).toHaveCount(24);
+    const boxes = await keys.evaluateAll((elements) =>
+      elements.map((element) => {
+        const box = element.getBoundingClientRect();
+        return {
+          left: Math.round(box.left),
+          top: Math.round(box.top),
+          size: Math.round(box.width),
+        };
+      }),
+    );
+    expect(new Set(boxes.map((box) => box.left)).size).toBe(4);
+    expect(new Set(boxes.map((box) => box.top)).size).toBe(6);
+    // Big enough for a finger, and all on screen without scrolling.
+    expect(Math.min(...boxes.map((box) => box.size))).toBeGreaterThanOrEqual(60);
+    const drawer = page.locator("aside.drawer");
+    const overflow = await drawer.evaluate(
+      (element) => element.scrollHeight - element.clientHeight,
+    );
+    expect(overflow).toBeLessThanOrEqual(1);
+  });
+}

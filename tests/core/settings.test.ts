@@ -75,6 +75,46 @@ describe("readSettings", () => {
     expect(result).toMatchObject({ colorId: "pink", mode: "fade", layout: "open", feel: "play" });
   });
 
+  it("keeps every setting when none of them is at its default", () => {
+    const changed = {
+      version: SETTINGS_VERSION,
+      colorId: "magenta",
+      mode: "breathe",
+      brightness: 2,
+      lightSpeed: 7,
+      bubblesOn: false,
+      bubbleSpeed: 4,
+      layout: "tubes3",
+      floaters: "stars",
+      layers: {
+        bubbles: { on: false, volume: 0.1 },
+        motor: { on: false, volume: 0.2 },
+        stream: { on: true, volume: 0.3 },
+        rain: { on: true, volume: 0.4 },
+        ocean: { on: true, volume: 0.9 },
+        deep: { on: true, volume: 0.7 },
+        noise: { on: true, volume: 0.15 },
+        chimes: { on: true, volume: 0.25 },
+      },
+      noiseColor: "white",
+      paused: true,
+      feel: "play",
+      masterVolume: 0.33,
+      touchSounds: false,
+      favourites: [null, null, null, null],
+      volumeCap: 0.44,
+      allowFlashStrobe: false,
+      remoteLocked: true,
+      drawerSide: "left",
+    };
+    const result = readSettings(JSON.parse(JSON.stringify(changed)));
+    expect(result).toEqual(changed);
+    for (const [name, value] of Object.entries(defaults)) {
+      const kept = new Map<string, unknown>(Object.entries(result)).get(name);
+      expect(name === "version" || name === "favourites" || kept !== value).toBe(true);
+    }
+  });
+
   it("fills in a layer that is missing or broken", () => {
     const result = readSettings({ layers: { rain: { on: true, volume: 5 }, motor: "loud" } });
     expect(result.layers.rain).toEqual({ on: true, volume: 1 });

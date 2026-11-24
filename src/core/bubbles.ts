@@ -133,17 +133,32 @@ function stir(bubble: Bubble, forces: readonly Force[], dt: number): void {
   }
 }
 
+/** How many bubbles each tube holds now, by tube index. */
+function countByTube(field: BubbleField): Map<number, number> {
+  const counts = new Map<number, number>();
+  for (const bubble of field.pool) {
+    if (bubble.active) counts.set(bubble.tube, (counts.get(bubble.tube) ?? 0) + 1);
+  }
+  return counts;
+}
+
 function spawn(field: BubbleField, input: StepInput): void {
   const rise = riseSpeed(input.speed);
+  const counts = countByTube(field);
   let room = input.limit - activeCount(field);
+  // Each tube may hold only its share of the limit. Without this, when the limit is
+  // low the tubes on the left would take every bubble and the rest would run dry.
+  const share = Math.ceil(input.limit / Math.max(1, input.tubes.length));
   field.owed = input.tubes.map((tube, index) => {
     const owed = (field.owed.at(index) ?? 0) + DENSITY * (tube.x1 - tube.x0) * rise * input.dt;
     const whole = Math.floor(owed);
-    for (let n = 0; n < whole && room > 0; n += 1) {
+    let here = counts.get(index) ?? 0;
+    for (let n = 0; n < whole && room > 0 && here < share; n += 1) {
       const free = field.pool.find((bubble) => !bubble.active);
       if (!free) break;
       launch(free, index, tube, input.rng);
       room -= 1;
+      here += 1;
     }
     return owed - whole;
   });

@@ -165,11 +165,11 @@
 
 /* Blocks inside a panel. */
 .block {
-  margin: 0 0 14px;
+  margin: 0 0 10px;
 }
 
 .block-title {
-  margin: 0 0 8px;
+  margin: 0 0 6px;
   font-size: 15px;
   font-weight: 800;
   letter-spacing: 0.04em;
@@ -190,7 +190,7 @@
 
 /* A tile: a square-ish toggle with an icon and a word. */
 .tile {
-  min-height: 76px;
+  min-height: 70px;
   padding: 8px 6px;
   border: 0;
   border-radius: 20px;
@@ -299,11 +299,6 @@
 
 .tiles.four .tile .name {
   font-size: 12px;
-}
-
-.drawer-panel > div {
-  display: flex;
-  flex-direction: column;
 }
 
 /* A labelled slider. */

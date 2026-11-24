@@ -59,6 +59,37 @@ describe("the pool", () => {
   });
 });
 
+describe("sharing bubbles between tubes", () => {
+  const perTube = (field: BubbleField, tubes: number): number[] =>
+    Array.from(
+      { length: tubes },
+      (_, index) => active(field).filter((bubble) => bubble.tube === index).length,
+    );
+
+  it.each([60, 120, 320])(
+    "gives every tube its share when only %s bubbles are allowed",
+    (limit) => {
+      const field = createField(320);
+      run(field, 60 * 40, input({ limit }));
+      const counts = perTube(field, 6);
+      expect(Math.min(...counts)).toBeGreaterThan(0);
+      expect(Math.max(...counts)).toBeLessThanOrEqual(Math.ceil(limit / 6));
+      expect(Math.max(...counts) - Math.min(...counts)).toBeLessThanOrEqual(limit / 6 / 2);
+    },
+  );
+
+  it("still never goes over the limit when the shares round up", () => {
+    const field = createField(320);
+    const stepInput = input({ limit: 61, speed: 5 });
+    let most = 0;
+    for (let n = 0; n < 1500; n += 1) {
+      stepField(field, stepInput);
+      most = Math.max(most, activeCount(field));
+    }
+    expect(most).toBeLessThanOrEqual(61);
+  });
+});
+
 describe("rising", () => {
   it.each([1, 2, 3, 4, 5])("keeps every bubble inside its tube at speed %s", (speed) => {
     const field = createField(320);

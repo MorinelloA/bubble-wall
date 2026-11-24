@@ -1,0 +1,11 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "testRunner": "vitest",
+  "vitest": { "configFile": "vitest.config.ts" },
+  "mutate": ["src/core/lights.ts", "src/core/settings.ts"],
+  "coverageAnalysis": "perTest",
+  "reporters": ["clear-text", "progress"],
+  "thresholds": { "high": 80, "low": 70, "break": 60 },
+  "tempDirName": ".stryker-tmp",
+  "timeoutMS": 20000
+}
